@@ -102,6 +102,13 @@ end
         @test features(comm) == txs
         @test samples(comm) == mss
 
+        c2 = merge(comm, CommunityProfile(sparse([0.0 2; 4 4]), [Taxon("taxon$i") for i in (1, 11)], 
+                                                                [MicrobiomeSample("sample$i") for i in (6, 7)]))
+        @test size(c2) == (11, 7)
+        @test c2["taxon1", "sample7"] == 2
+        @test c2["taxon2", "sample7"] == 0
+        @test c2["taxon11", "sample1"] == 0
+
         @test present(0.1)
         @test !present(0.1, 0.2)
         @test_throws DomainError present(-0.1)

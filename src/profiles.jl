@@ -113,6 +113,45 @@ function Base.getindex(at::CommunityProfile, inds...)
     end
 end
 
+function Base.setindex!(cp::CommunityProfile, val, f::Int, s::Int)
+    setindex!(abundances(cp), val, f, s)
+    return cp
+end
+
+function Base.setindex!(cp::CommunityProfile, val, f::Union{AbstractString, AbstractFeature}, s::Union{AbstractString, AbstractSample})
+    f isa AbstractFeature && (f = name(f))
+    s isa AbstractSample && (s = name(s))
+    fi = findfirst(fs-> f == fs, featurenames(cp))
+    si = findfirst(ss-> s == ss, samplenames(cp))
+    setindex!(cp, val, fi, si)
+    return cp
+end
+
+"""
+    merge(c1::T, cs::T...) where T <: AbstractAbundanceTable
+
+Merge two of the same type of `AbstractAbundanceTable`.
+Only works if all sample names are unique.
+
+Limitation: features are only matched based on the name.
+If the first instance of a feature
+"""
+function Base.merge(c1::T, cs::T...) where T <: AbstractAbundanceTable
+    communities = (c1, cs...)
+    overlap = intersect(samplenames.(communities)...)
+    length(overlap) > 0 && throw(ArgumentError("Can not merge communities with overlapping samples"))
+    all_samples = reduce(vcat, samples.(communities))
+    all_features = unique(name, reduce(vcat, features.(communities)))
+
+    mat = spzeros(length(all_features), length(all_samples))
+    
+    merged = T(mat, all_features, all_samples)
+    for c in communities, f in features(c), s in samples(c)
+        merged[f, s] = c[f, s]
+    end
+    return merged
+end
+
 
 
 ## -- EcoBase Translations -- ##
